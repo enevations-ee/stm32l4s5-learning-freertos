@@ -1,0 +1,23 @@
+{
+   "name": "STM32 Development Container",
+   "build": {
+      "dockerfile": "Dockerfile",
+      "context": ".."
+   },
+   "customizations": {
+      "vscode": {
+         "extensions": [
+            "mcu-debug.debug-tracker-vscode",
+            "marus25.cortex-debug",
+            "ms-vscode.cpptools",
+            "ms-vscode.cmake-tools"
+         ],
+         "settings": {
+            "C_Cpp.default.compileCommands": "${workspaceFolder}/build/debug/compile_commands.json",
+            "C_Cpp.default.intelliSenseMode": "linux-gcc-arm",
+            "cmake.configureOnOpen": false
+         }
+      }
+   },
+   "remoteUser": "root"
+}

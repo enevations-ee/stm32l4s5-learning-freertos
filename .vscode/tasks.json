@@ -1,0 +1,52 @@
+{
+  "version": "2.0.0",
+  "tasks": [
+    {
+      "label": "Build STM32 Firmware (Debug)",
+      "type": "shell",
+      "command": "cmake -B build/debug -G Ninja -DCMAKE_BUILD_TYPE=Debug -DCMAKE_TOOLCHAIN_FILE=cmake/arm-none-eabi.cmake -DFETCHCONTENT_BASE_DIR=${workspaceFolder}/.cache/deps && cmake --build build/debug",
+      "group": {
+        "kind": "build",
+        "isDefault": true
+      },
+      "problemMatcher": ["$gcc"]
+    },
+    {
+      "label": "Build STM32 Firmware (Release)",
+      "type": "shell",
+      "command": "cmake -B build/release -G Ninja -DCMAKE_BUILD_TYPE=Release -DCMAKE_TOOLCHAIN_FILE=cmake/arm-none-eabi.cmake -DFETCHCONTENT_BASE_DIR=${workspaceFolder}/.cache/deps && cmake --build build/release",
+      "group": "build",
+      "problemMatcher": ["$gcc"]
+    },
+    {
+      "label": "Clean Debug Build",
+      "type": "shell",
+      "command": "cmake --build build/debug --target clean",
+      "problemMatcher": []
+    },
+    {
+      "label": "Clean Release Build",
+      "type": "shell",
+      "command": "cmake --build build/release --target clean",
+      "problemMatcher": []
+    },
+    {
+      "label": "Clean All Builds (Keep FetchContent Cache)",
+      "type": "shell",
+      "command": "rm -rf build/debug build/release",
+      "problemMatcher": []
+    },
+    {
+      "label": "Purge FetchContent Cache",
+      "type": "shell",
+      "command": "rm -rf .cache/deps",
+      "problemMatcher": []
+    },
+    {
+      "label": "Purge All Builds and FetchContent Cache",
+      "type": "shell",
+      "command": "rm -rf build/debug build/release .cache/deps",
+      "problemMatcher": []
+    }
+  ]
+}

@@ -1,0 +1,18 @@
+{
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "name": "Debug STM32L4S5 (Dev Container)",
+      "cwd": "${workspaceFolder}",
+      "executable": "${workspaceFolder}/build/debug/stm32l4s5-base.elf",
+      "request": "launch",
+      "type": "cortex-debug",
+      "servertype": "external",
+      "gdbTarget": "host.docker.internal:3333",
+      "gdbPath": "gdb-multiarch",
+      "rtos": "FreeRTOS",
+      "runToEntryPoint": "main",
+      "preLaunchTask": "Build STM32 Firmware (Debug)"
+    }
+  ]
+}

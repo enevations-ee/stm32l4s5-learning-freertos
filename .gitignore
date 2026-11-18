@@ -1,0 +1,34 @@
+# CMake build directories
+/build/
+
+# FetchContent dependency cache
+/.cache/
+
+# CMake user configuration
+CMakeUserPresets.json
+*.cmake.user
+
+# Compiler/linker outputs
+*.o
+*.obj
+*.a
+*.so
+*.d
+*.su
+*.map
+*.elf
+*.bin
+*.hex
+
+# Editor files
+.vscode/*.code-workspace
+*.code-workspace
+
+# OS-generated files
+.DS_Store
+Thumbs.db
+
+# Temporary and backup files
+*.tmp
+*.swp
+*~

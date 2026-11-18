@@ -25,12 +25,36 @@ the project also has hooks for allocation failure and stack overflow detection.
 - MCU: STM32L4S5VIT6
 - Core: ARM Cortex-M4F
 - LD2: PB14
+- Wi-Fi/BLE LED: PC9
 - USART1 TX: PB6
 - USART1 RX: PB7
 - ST-LINK virtual COM port: 115200 baud, 8-N-1
 
 The 115200 baud serial connection is read through the board's ST-LINK USB
 connection. No wiring is required for the default blink and serial output.
+
+## LED helper
+
+[`include/led.hpp`](include/led.hpp) provides the `Led` C++ wrapper used by
+`src/main.cpp`. Create a constexpr instance with a GPIO base address and an
+STM32 HAL pin mask:
+
+```cpp
+static constexpr Led green_led(GPIOB_BASE, GPIO_PIN_14);
+static constexpr Led wifi_ble_led(GPIOC_BASE, GPIO_PIN_9);
+```
+
+After `HAL_Init()`, initialize each LED once to enable its GPIO clock and
+configure the pin as a push-pull output:
+
+```cpp
+green_led.init();
+wifi_ble_led.init();
+```
+
+Use `on()`, `off()`, and `toggle()` to control an initialized LED. The wrapper
+supports GPIOA through GPIOE base addresses. Pin parameters must be HAL pin
+masks such as `GPIO_PIN_14`, not numeric pin positions.
 
 ## Project layout
 
@@ -41,6 +65,7 @@ connection. No wiring is required for the default blink and serial output.
 ├── config/
 │   ├── FreeRTOSConfig.h               # FreeRTOS features and interrupt priorities
 │   └── stm32l4xx_hal_conf.h           # Enabled HAL modules
+├── include/led.hpp                    # GPIO-backed LED C++ wrapper
 ├── src/main.cpp                       # Clock, GPIO, UART, and FreeRTOS application
 ├── STM32L4S5VITx_FLASH.ld             # 2 MB Flash / 640 KB SRAM memory layout
 ├── docs/

@@ -4,6 +4,7 @@
 #include "stm32l4xx_hal.h"
 #include "FreeRTOS.h"
 #include "task.h"
+#include "led.hpp"
 
 #ifndef NDEBUG
 // OpenOCD uses this symbol to determine the priority range for FreeRTOS thread
@@ -14,6 +15,8 @@ __attribute__((used)) int uxTopUsedPriority = configMAX_PRIORITIES - 1;
 #endif
 
 static UART_HandleTypeDef huart1{};
+static constexpr Led green_led(GPIOB_BASE, GPIO_PIN_14);
+static constexpr Led wifi_ble_led(GPIOC_BASE, GPIO_PIN_9);
 
 // --- FreeRTOS Kernel Hooks ---
 extern "C" {
@@ -70,14 +73,8 @@ static void system_clock_config() {
 static void gpio_and_uart_init() {
     __HAL_RCC_GPIOB_CLK_ENABLE();
     __HAL_RCC_USART1_CLK_ENABLE();
-
-    // Configure the board's green LD2 as a low-speed push-pull output.
-    GPIO_InitTypeDef led{};
-    led.Pin = GPIO_PIN_14;
-    led.Mode = GPIO_MODE_OUTPUT_PP;
-    led.Pull = GPIO_NOPULL;
-    led.Speed = GPIO_SPEED_FREQ_LOW;
-    HAL_GPIO_Init(GPIOB, &led);
+    green_led.init();
+    wifi_ble_led.init();
 
     // Route USART1 to the ST-LINK virtual COM port pins (AF7).
     GPIO_InitTypeDef uart_pins{};
@@ -94,7 +91,7 @@ static void gpio_and_uart_init() {
     huart1.Init.StopBits = UART_STOPBITS_1;
     huart1.Init.Parity = UART_PARITY_NONE;
     huart1.Init.Mode = UART_MODE_TX_RX;
-    huart1.Init.HwFlowCtl = UART_HWCONTROL_NONE;
+    huart1.Init.HwFlowCtl = UART_HWCONTROL_NONE;   
     huart1.Init.OverSampling = UART_OVERSAMPLING_16;
     huart1.Init.OneBitSampling = UART_ONE_BIT_SAMPLE_DISABLE;
     huart1.AdvancedInit.AdvFeatureInit = UART_ADVFEATURE_NO_INIT;
@@ -106,17 +103,40 @@ static void blinky_task(void*) {
     char msg[64];
     uint32_t count = 0;
 
+    //set initial state of the LEDs
+    green_led.off();
+    
+
     // UART writes are synchronous; this simple example logs directly from its task.
     const char* banner = "\r\nHello Blinky from STM32L4S5!\r\n";
     HAL_UART_Transmit(&huart1, reinterpret_cast<const uint8_t*>(banner), std::strlen(banner), 100);
 
     for (;;) {
-        HAL_GPIO_TogglePin(GPIOB, GPIO_PIN_14);
+        green_led.toggle();
         std::snprintf(msg, sizeof(msg), "Blink #%lu (uptime: %lu ms)\r\n", ++count, HAL_GetTick());
         HAL_UART_Transmit(&huart1, reinterpret_cast<const uint8_t*>(msg), std::strlen(msg), 100);
         vTaskDelay(pdMS_TO_TICKS(1000));
     }
 }
+
+static void hello_task(void*) {
+    char msg[64];
+    uint32_t count = 0;
+
+    //set initial state of the LEDs
+    wifi_ble_led.on();
+
+    // UART writes are synchronous; this simple example logs directly from its task.
+    const char* banner = "\r\nHello from STM32L4S5!\r\n";
+    HAL_UART_Transmit(&huart1, reinterpret_cast<const uint8_t*>(banner), std::strlen(banner), 100);
+
+    for (;;) {
+        std::snprintf(msg, sizeof(msg), "Hello #%lu (uptime: %lu ms)\r\n", ++count, HAL_GetTick());
+        HAL_UART_Transmit(&huart1, reinterpret_cast<const uint8_t*>(msg), std::strlen(msg), 100);
+        wifi_ble_led.toggle();
+        vTaskDelay(pdMS_TO_TICKS(2000));
+    }
+}   
 
 int main() {
     HAL_Init();
@@ -124,7 +144,8 @@ int main() {
     gpio_and_uart_init();
 
     // FreeRTOS stack depths are in words (256 words here), not bytes.
-    xTaskCreate(blinky_task, "Blinky", 256, nullptr, tskIDLE_PRIORITY + 1, nullptr);
+    xTaskCreate(blinky_task, "Blinky", 256, nullptr, tskIDLE_PRIORITY + 2, nullptr);
+    xTaskCreate(hello_task, "Hello", 256, nullptr, tskIDLE_PRIORITY + 1, nullptr);
     vTaskStartScheduler();
 
     // The scheduler should not return; reaching here indicates startup failure.

@@ -77,6 +77,7 @@ target_compile_definitions(${PROJECT_NAME}.elf PRIVATE
 )
 
 target_include_directories(${PROJECT_NAME}.elf PRIVATE
+    include
     config
     "${CUBE_DRIVERS}/STM32L4xx_HAL_Driver/Inc"
     "${CUBE_DRIVERS}/STM32L4xx_HAL_Driver/Inc/Legacy"

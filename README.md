@@ -56,6 +56,29 @@ Use `on()`, `off()`, and `toggle()` to control an initialized LED. The wrapper
 supports GPIOA through GPIOE base addresses. Pin parameters must be HAL pin
 masks such as `GPIO_PIN_14`, not numeric pin positions.
 
+## UART helper
+
+[`include/uart.hpp`](include/uart.hpp) provides the `Uart` C++ wrapper used by
+`src/main.cpp`. It owns the HAL UART handle and configures the peripheral, GPIO
+alternate function, pins, baud rate, and 8-N-1 serial settings:
+
+```cpp
+static Uart uart1(USART1, GPIOB_BASE, GPIO_PIN_6, GPIO_PIN_7,
+                  GPIO_AF7_USART1, 115200);
+```
+
+Call `uart1.init()` after `HAL_Init()`. Transmit a null-terminated string with
+`uart1.write(text)` or a byte buffer with `uart1.write(data, length)`. Both
+methods return `HAL_StatusTypeDef` and use a 100 ms timeout by default.
+
+### UART build requirement
+
+Declare `Uart` objects as regular static or local variables, not `constexpr`
+objects. The HAL `UART_HandleTypeDef` contains volatile state fields and is
+mutated by `init()` and `write()`. The constructor may remain `constexpr`, but
+the wrapper instance itself must be non-`const` so the HAL handle can be
+initialized and updated at runtime.
+
 ## Project layout
 
 ```text
@@ -66,6 +89,7 @@ masks such as `GPIO_PIN_14`, not numeric pin positions.
 │   ├── FreeRTOSConfig.h               # FreeRTOS features and interrupt priorities
 │   └── stm32l4xx_hal_conf.h           # Enabled HAL modules
 ├── include/led.hpp                    # GPIO-backed LED C++ wrapper
+├── include/uart.hpp                   # HAL UART C++ wrapper
 ├── src/main.cpp                       # Clock, GPIO, UART, and FreeRTOS application
 ├── STM32L4S5VITx_FLASH.ld             # 2 MB Flash / 640 KB SRAM memory layout
 ├── docs/
@@ -75,7 +99,7 @@ masks such as `GPIO_PIN_14`, not numeric pin positions.
 └── build/debug/                       # Existing debug build outputs
 ```
 
-`include/` is currently reserved for project headers.
+`include/` contains reusable project headers for LED and UART hardware wrappers.
 
 ## Build dependencies
 

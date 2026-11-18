@@ -1,10 +1,10 @@
 #include <cstdio>
-#include <cstring>
 
 #include "stm32l4xx_hal.h"
 #include "FreeRTOS.h"
 #include "task.h"
 #include "led.hpp"
+#include "uart.hpp"
 
 #ifndef NDEBUG
 // OpenOCD uses this symbol to determine the priority range for FreeRTOS thread
@@ -14,9 +14,10 @@ __attribute__((used)) int uxTopUsedPriority = configMAX_PRIORITIES - 1;
 }
 #endif
 
-static UART_HandleTypeDef huart1{};
 static constexpr Led green_led(GPIOB_BASE, GPIO_PIN_14);
 static constexpr Led wifi_ble_led(GPIOC_BASE, GPIO_PIN_9);
+static Uart uart1(USART1, GPIOB_BASE, GPIO_PIN_6, GPIO_PIN_7,
+                  GPIO_AF7_USART1, 115200);
 
 // --- FreeRTOS Kernel Hooks ---
 extern "C" {
@@ -71,31 +72,9 @@ static void system_clock_config() {
 }
 
 static void gpio_and_uart_init() {
-    __HAL_RCC_GPIOB_CLK_ENABLE();
-    __HAL_RCC_USART1_CLK_ENABLE();
     green_led.init();
     wifi_ble_led.init();
-
-    // Route USART1 to the ST-LINK virtual COM port pins (AF7).
-    GPIO_InitTypeDef uart_pins{};
-    uart_pins.Pin = GPIO_PIN_6 | GPIO_PIN_7;
-    uart_pins.Mode = GPIO_MODE_AF_PP;
-    uart_pins.Pull = GPIO_NOPULL;
-    uart_pins.Speed = GPIO_SPEED_FREQ_VERY_HIGH;
-    uart_pins.Alternate = GPIO_AF7_USART1;
-    HAL_GPIO_Init(GPIOB, &uart_pins);
-
-    huart1.Instance = USART1;
-    huart1.Init.BaudRate = 115200;
-    huart1.Init.WordLength = UART_WORDLENGTH_8B;
-    huart1.Init.StopBits = UART_STOPBITS_1;
-    huart1.Init.Parity = UART_PARITY_NONE;
-    huart1.Init.Mode = UART_MODE_TX_RX;
-    huart1.Init.HwFlowCtl = UART_HWCONTROL_NONE;   
-    huart1.Init.OverSampling = UART_OVERSAMPLING_16;
-    huart1.Init.OneBitSampling = UART_ONE_BIT_SAMPLE_DISABLE;
-    huart1.AdvancedInit.AdvFeatureInit = UART_ADVFEATURE_NO_INIT;
-    HAL_UART_Init(&huart1);
+    uart1.init();
 }
 
 // --- Application Task ---
@@ -109,12 +88,12 @@ static void blinky_task(void*) {
 
     // UART writes are synchronous; this simple example logs directly from its task.
     const char* banner = "\r\nHello Blinky from STM32L4S5!\r\n";
-    HAL_UART_Transmit(&huart1, reinterpret_cast<const uint8_t*>(banner), std::strlen(banner), 100);
+    uart1.write(banner);
 
     for (;;) {
         green_led.toggle();
         std::snprintf(msg, sizeof(msg), "Blink #%lu (uptime: %lu ms)\r\n", ++count, HAL_GetTick());
-        HAL_UART_Transmit(&huart1, reinterpret_cast<const uint8_t*>(msg), std::strlen(msg), 100);
+        uart1.write(msg);
         vTaskDelay(pdMS_TO_TICKS(1000));
     }
 }
@@ -128,11 +107,11 @@ static void hello_task(void*) {
 
     // UART writes are synchronous; this simple example logs directly from its task.
     const char* banner = "\r\nHello from STM32L4S5!\r\n";
-    HAL_UART_Transmit(&huart1, reinterpret_cast<const uint8_t*>(banner), std::strlen(banner), 100);
+    uart1.write(banner);
 
     for (;;) {
         std::snprintf(msg, sizeof(msg), "Hello #%lu (uptime: %lu ms)\r\n", ++count, HAL_GetTick());
-        HAL_UART_Transmit(&huart1, reinterpret_cast<const uint8_t*>(msg), std::strlen(msg), 100);
+        uart1.write(msg);
         wifi_ble_led.toggle();
         vTaskDelay(pdMS_TO_TICKS(2000));
     }
